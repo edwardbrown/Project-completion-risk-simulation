@@ -8,6 +8,7 @@ library(deSolve)
 
 pcrs_d <- function(t, state, parameters) {
   with(as.list(c(state)), {
+    # the replace argument isn't needed as we are generating only 1 number, but remember to leave it if you alter to sample > 1
     db <-  (sample(80:100,1, replace=TRUE) ) # project tasks completed [lower/upper see below]
     da <-  ifelse ((a - b) < 0, 0, (a - b) ) # tasks left to be completed at end of month
     list(c(db, da))
@@ -21,9 +22,24 @@ times      <- seq(0, 12, by = 1) # 12 us number of months remaining
 out <- ode(y = state, times = times, func = pcrs_d, parms = NULL, method="iteration")
 
 matplot.deSolve(out) #generates a plot
+plot(out, type="line", which="a")
 
-# uncomment to display the day the remaining tasks.
-out[,3]
+# uncomment to display the remaining tasks.
+# out[,3]
+
+
+# Un-comment the next section to do multiple single runs with a comparative chart.
+# You will need to change the upper/lower values and b above prior to each run. Alternatively,
+# you could modify the function to accept parameters.
+
+# out2 <- ode(y = state, times = times, func = pcrs_d, parms = NULL, method="iteration")
+# out3 <- ode(y = state, times = times, func = pcrs_d, parms = NULL, method="iteration")
+# 
+# plot(out,out2,out3, type="l", which="a",
+#      ylab = c("Remaining Tasks"),
+#      xlab = "Time (d)", main = c("Three Runs: 40, 60, 80 to 100"),
+#      col = c("red", "blue", "darkred"))
+
 
 
 # below is the primary function to calculate percentage of time the project task goal is not met
@@ -40,7 +56,8 @@ pcrsfunc <- function() {
   xbar.remaining <- rep(NA,months)
 
   for (i in 1:months)
-    xbar.completed[[i]] <-sample(lower:upper, 1, replace=TRUE)
+    # the replace argument isn't needed as we are generating only 1 number, but remember to leave it if you alter to sample > 1
+    xbar.completed[[i]] <-sample(lower:upper, 1, replace=TRUE) 
   
   xbar.remaining[[1]] = 1000 # number of tasks remaining at start of simulation
   
