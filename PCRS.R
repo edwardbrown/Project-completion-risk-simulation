@@ -8,14 +8,14 @@ library(deSolve)
 
 pcrs_d <- function(t, state, parameters) {
   with(as.list(c(state)), {
-    db <-  (sample(40:80,1, replace=TRUE) ) # project tasks completed [lower/upper see below]
+    db <-  (sample(80:100,1, replace=TRUE) ) # project tasks completed [lower/upper see below]
     da <-  ifelse ((a - b) < 0, 0, (a - b) ) # tasks left to be completed at end of month
     list(c(db, da))
   })
 }
 
 # initial state and control for number and interval of iterations
-state      <- c(b = 40, a = 1000) # b is the initial tasks completed, a is remaining tasks
+state      <- c(b = 80, a = 1000) # b is the initial tasks completed, a is remaining tasks
 times      <- seq(0, 12, by = 1) # 12 us number of months remaining
 
 out <- ode(y = state, times = times, func = pcrs_d, parms = NULL, method="iteration")
@@ -31,8 +31,8 @@ out[,3]
 pcrsfunc <- function() {
   
   months <- 12 # months left to complete project
-  lower <- 40 # lowest number of tasks observed/expected to be completed
-  upper <- 80 # highest number of tasks observed/expected to be completed
+  lower <- 80 # lowest number of tasks observed/expected to be completed
+  upper <- 100 # highest number of tasks observed/expected to be completed
   
   threshold <- 0 # goal is to have zero tasks remaining at project end time
   
@@ -55,7 +55,7 @@ pcrsfunc <- function() {
 } # end of function
 
 
-reps <- 1000 # number of bootstrap replicates
+reps <- 1000 # number of bootstrap replicates, increase/decrease as desired
 bresults <- rep(NA,reps) # for storing the bootsrap results
 
 # run the bootsrap
@@ -66,6 +66,7 @@ for (i in 1:reps)
 sd(bresults)
 summary(bresults)
 hist(bresults)
+# the 95% CI
 quantile(bresults, 0.025)
 quantile(bresults, 0.975)
 
@@ -74,4 +75,5 @@ dataview <- as.data.frame(bresults)
 
 # the following calculates the percentage of failure across all bootstrap replicates
 perc_failure <- length(dataview$bresults[dataview$bresults > 0])/reps
+# with the values above, failure might reasonably be expected approximately 68% of the time
 perc_failure
