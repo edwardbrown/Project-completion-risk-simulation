@@ -1,7 +1,7 @@
 # This code can be used to simulate project completion failur risk.
 # The first section uses deSolve as an exemplar and provides a chart, though it can be extended.
 # The second section provides the bootsrapping and stores the number of project tasks not completed
-# and calculates the proportion of failures that occur. 
+# and calculates an estimate of the proportion of failures that occur. 
 # Edward G. Brown 2025
 
 library(deSolve)
@@ -24,11 +24,11 @@ out <- ode(y = state, times = times, func = pcrs_d, parms = NULL, method="iterat
 matplot.deSolve(out) #generates a plot
 plot(out, type="line", which="a")
 
-# uncomment to display the remaining tasks.
+# Uncomment to display the remaining tasks.
 # out[,3]
 
 
-# Un-comment the next section to do multiple single runs with a comparative chart.
+# Uncomment the next section to do multiple single runs with a comparative chart.
 # You will need to change the upper/lower values and b above prior to each run. Alternatively,
 # you could modify the function to accept parameters.
 
@@ -90,7 +90,6 @@ quantile(bresults, 0.975)
 # store in a data frame
 dataview <- as.data.frame(bresults)
 
-# the following calculates the percentage of failure across all bootstrap replicates
-perc_failure <- length(dataview$bresults[dataview$bresults > 0])/reps
-# with the values above, failure might reasonably be expected approximately 68% of the time
-perc_failure
+# the following calculates an estimate of the proportion of failure across all bootstrap replicates
+prop_failure <- length(dataview$bresults[dataview$bresults > 0])/reps
+prop_failure
