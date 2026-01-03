@@ -42,15 +42,15 @@ plot(out, type="line", which="a")
 
 
 
-# below is the primary function to calculate percentage of time the project task goal is not met
+# below is the primary function to calculate proportion of time the project task goal is not met
 
-pcrsfunc <- function() {
+pcrsfunc <- function(m,l,u,t) {
   
-  months <- 12 # months left to complete project
-  lower <- 80 # lowest number of tasks observed/expected to be completed
-  upper <- 100 # highest number of tasks observed/expected to be completed
+  months <- m # 12 months left to complete project
+  lower <- l  # 80 lowest number of tasks observed/expected to be completed
+  upper <- u  # 100 highest number of tasks observed/expected to be completed
   
-  threshold <- 0 # goal is to have zero tasks remaining at project end time
+  threshold <- t # 0 goal is to have zero tasks remaining at project end time
   
   xbar.completed <- rep(NA,months)
   xbar.remaining <- rep(NA,months)
@@ -77,7 +77,7 @@ bresults <- rep(NA,reps) # for storing the bootsrap results
 
 # run the bootsrap
 for (i in 1:reps)
-  bresults[[i]] <- pcrsfunc()
+  bresults[[i]] <- pcrsfunc(12,80,100,0)
 
 # the following summarize, plot, and provide 95% CI for number of tasks remaining
 sd(bresults)
@@ -93,3 +93,27 @@ dataview <- as.data.frame(bresults)
 # the following calculates an estimate of the proportion of failure across all bootstrap replicates
 prop_failure <- length(dataview$bresults[dataview$bresults > 0])/reps
 prop_failure
+
+
+
+
+# this matrix will store our results when we iterate the function over a range for the lower (or upper) boundary value
+# it's important to set the last argument to be the correct column size
+overall <- matrix(0,reps,60)
+
+for (j in 1:60)
+  for (i in 1:reps)
+    overall[i,j] <- pcrsfunc(12,(100-j),100,0)
+
+# data frame if desired
+# overallview <- as.data.frame(overall)
+
+# proportion of failure by column (in this example, by the lower boundary, beginning with 99 all the way down to 40)
+prop_failure_overall <- apply(overall,2, function(x) length(x[x > 0])/reps)
+
+# a couple of plots
+plot(prop_failure_overall)
+hist(prop_failure_overall)
+
+# data frame if desired
+prop_failure_overallview <- as.data.frame(prop_failure_overall)
