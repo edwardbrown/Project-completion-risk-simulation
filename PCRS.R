@@ -116,5 +116,19 @@ prop_failure_overall <- apply(overall,2, function(x) length(x[x > 0])/reps)
 plot(prop_failure_overall)
 hist(prop_failure_overall)
 
-# data frame if desired
+# data frame if desired. Set the number below to match the upper boundary used above (e.g., 100)
+# You should end up with a data frame showing the proportion of failure for each lower/upper combo you simulated
 prop_failure_overallview <- as.data.frame(prop_failure_overall)
+prop_failure_overallview <- as.data.frame(prop_failure_overall)
+prop_failure_overallview$lower <- (100-seq.int(nrow(prop_failure_overallview)))
+prop_failure_overallview$upper <- 100
+
+# a plot showing proportion of failure by the lower boundary
+plot(prop_failure_overallview$prop_failure_overall,prop_failure_overallview$lower, type="l")
+
+
+# finally, select out the range that aligns with an acceptable failure proportion (e.g., 0.05)
+library(dplyr)
+acceptable_range <- prop_failure_overallview %>%
+  filter(prop_failure_overall <= 0.05)
+
