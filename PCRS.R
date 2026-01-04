@@ -44,13 +44,13 @@ plot(out, type="line", which="a")
 
 # below is the primary function to calculate proportion of time the project task goal is not met
 
-pcrsfunc <- function(m,l,u,t) {
+pcrsfunc <- function(m,l,u,t,r) {
   
-  months <- m # 12 months left to complete project
-  lower <- l  # 80 lowest number of tasks observed/expected to be completed
-  upper <- u  # 100 highest number of tasks observed/expected to be completed
-  
-  threshold <- t # 0 goal is to have zero tasks remaining at project end time
+  months <- m # months left to complete project
+  lower <- l  # lowest number of tasks observed/expected to be completed
+  upper <- u  # highest number of tasks observed/expected to be completed
+  threshold <- t # goal is to have zero tasks remaining at project end time
+  remaining <- r # number of tasks remaining at start of simulation
   
   xbar.completed <- rep(NA,months)
   xbar.remaining <- rep(NA,months)
@@ -59,7 +59,7 @@ pcrsfunc <- function(m,l,u,t) {
     # the replace argument isn't needed as we are generating only 1 number, but remember to leave it if you alter to sample > 1
     xbar.completed[[i]] <-sample(lower:upper, 1, replace=TRUE) 
   
-  xbar.remaining[[1]] = 1000 # number of tasks remaining at start of simulation
+  xbar.remaining[[1]] = remaining 
   
   for (i in 1:months)
     xbar.remaining[[i+1]] = ifelse ((xbar.remaining[i] - xbar.completed[i]) <= 0, 0, (xbar.remaining[i] - xbar.completed[i]) ) # remaining tasks
@@ -77,7 +77,7 @@ bresults <- rep(NA,reps) # for storing the bootsrap results
 
 # run the bootsrap
 for (i in 1:reps)
-  bresults[[i]] <- pcrsfunc(12,80,100,0)
+  bresults[[i]] <- pcrsfunc(12,80,100,0,1000)
 
 # the following summarize, plot, and provide 95% CI for number of tasks remaining
 sd(bresults)
@@ -101,9 +101,10 @@ prop_failure
 # it's important to set the last argument to be the correct column size
 overall <- matrix(0,reps,60)
 
-for (j in 1:60)
+# iterate over random lower bounds (e.g., 99, 98, 97 ... 40) while keeping upper bound fixed
+for (j in 1:60) 
   for (i in 1:reps)
-    overall[i,j] <- pcrsfunc(12,(100-j),100,0)
+    overall[i,j] <- pcrsfunc(12,(100-j),100,0,1000)
 
 # data frame if desired
 # overallview <- as.data.frame(overall)
