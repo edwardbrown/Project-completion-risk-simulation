@@ -43,55 +43,75 @@ plot(out, type="line", which="a")
 
 
 # below is the primary function to calculate proportion of time the project task goal is not met
-
-pcrsfunc <- function(m,l,u,t,r) {
+pcrsfunc <- function(m,l,u,t,r,d) {
   
   months <- m # months left to complete project
   lower <- l  # lowest number of tasks observed/expected to be completed
   upper <- u  # highest number of tasks observed/expected to be completed
   threshold <- t # goal is to have zero tasks remaining at project end time
   remaining <- r # number of tasks remaining at start of simulation
+  returns <- d # data to return, either one value (1) or multiple (2) in a 2 column matrix
   
   xbar.completed <- rep(NA,months)
   xbar.remaining <- rep(NA,months)
-
+  
   for (i in 1:months)
     # the replace argument isn't needed as we are generating only 1 number, but remember to leave it if you alter to sample > 1
-    xbar.completed[[i]] <-sample(lower:upper, 1, replace=TRUE) 
+    xbar.completed[[i]] <-sample(lower:upper, 1, replace=TRUE)
   
-  xbar.remaining[[1]] = remaining 
+  xbar.remaining[[1]] = remaining # number of tasks remaining at start of simulation
   
   for (i in 1:months)
     xbar.remaining[[i+1]] = ifelse ((xbar.remaining[i] - xbar.completed[i]) <= 0, 0, (xbar.remaining[i] - xbar.completed[i]) ) # remaining tasks
-
-  # alternatively, rather than return tasks remaining you can return success/failure 
-  # over_threshold <- ifelse (xbar.remaining[months] > threshold,1,0) # 1 is failure
-  # return(over_threshold)
-
+  
+  if (returns == 2) {
+    # Let's output both the median completed per month and the remaining per month
+    # returning both can be useful for further testing (including senstivity analysis)
+    output <- cbind(median(xbar.completed[i]),xbar.remaining[i])
+    return(output)
+  } else {
     return(xbar.remaining[i])
+    
+    # alternatively, rather than return tasks remaining you can return success/failure 
+    # over_threshold <- ifelse (xbar.remaining[months] > threshold,1,0) # 1 is failure
+    # return(over_threshold)
+    
+    # another way is to just do the calc in one go, but you won't be able to store/return information from
+    # individual runs if need be and it won't simulate the real situation as closely so you won't be able to step
+    # through the process, though the end results may be the same. 
+    # To use this method, uncomment the following lines, and comment all the lines xbar lines and for loops above
+    
+    # completed <- sum(sample(lower:upper, months, replace=TRUE))
+    # remaining <- ifelse (remaining - completed <= 0,0,(remaining-completed))
+    # return(remaining)
+  }
+  
 } # end of function
 
-
 reps <- 1000 # number of bootstrap replicates, increase/decrease as desired
-bresults <- rep(NA,reps) # for storing the bootsrap results
 
-# run the bootsrap
+# bresults <- rep(NA,reps) # for storing the results (use this if just one number)
+bresults <- matrix(0,nrow=reps,ncol=2) # use if returning the matrix
+
 for (i in 1:reps)
-  bresults[[i]] <- pcrsfunc(12,80,100,0,1000)
+  # bresults[i] <- pcrsfunc(12,80,100,0,1000,1) # use this if just one number
+  bresults[i,] <- pcrsfunc(12,80,100,0,1000,2)
 
 # the following summarize, plot, and provide 95% CI for number of tasks remaining
-sd(bresults)
-summary(bresults)
-hist(bresults)
+# if returning just one value, remove the [,*]
+sd(bresults[,2])
+summary(bresults[,2])
+hist(bresults[,2])
 # the 95% CI
-quantile(bresults, 0.025)
-quantile(bresults, 0.975)
+quantile(bresults[,2], 0.025)
+quantile(bresults[,2], 0.975)
 
 # store in a data frame
 dataview <- as.data.frame(bresults)
 
 # the following calculates an estimate of the proportion of failure across all bootstrap replicates
-prop_failure <- length(dataview$bresults[dataview$bresults > 0])/reps
+# prop_failure <- length(dataview$bresults[dataview$bresults > 0])/reps # use this if returning 1 variable
+prop_failure <- length(dataview$V2[dataview$V2 > 0])/reps # use this if returning the matrix
 prop_failure
 
 
@@ -104,7 +124,7 @@ overall <- matrix(0,reps,60)
 # iterate over random lower bounds (e.g., 99, 98, 97 ... 40) while keeping upper bound fixed
 for (j in 1:60) 
   for (i in 1:reps)
-    overall[i,j] <- pcrsfunc(12,(100-j),100,0,1000)
+    overall[i,j] <- pcrsfunc(12,(100-j),100,0,1000,1)
 
 # data frame if desired
 # overallview <- as.data.frame(overall)
