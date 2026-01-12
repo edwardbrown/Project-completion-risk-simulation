@@ -67,7 +67,7 @@ pcrsfunc <- function(m,l,u,t,r,d) {
   if (returns == 2) {
     # Let's output both the median completed per month and the remaining per month
     # returning both can be useful for further testing (including senstivity analysis)
-    output <- cbind(median(xbar.completed[i]),xbar.remaining[i])
+    output <- cbind(median(xbar.completed[]),xbar.remaining[i])
     return(output)
   } else {
     return(xbar.remaining[i])
