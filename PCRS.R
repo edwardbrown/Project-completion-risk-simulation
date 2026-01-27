@@ -2,7 +2,15 @@
 # The first section uses deSolve as an exemplar and provides a chart, though it can be extended.
 # The second section provides the bootsrapping and stores the number of project tasks not completed
 # and calculates an estimate of the proportion of failures that occur. 
+# There is now an additional section to perform importance sampling to test for extreme values in the tail(s).
 # Edward G. Brown 2025
+
+rm(list=ls())
+# Clear all plots and suppress errors if no plots exist
+try(dev.off(dev.list()["RStudioGD"]), silent=TRUE)
+gc() # garbage collection
+set.seed(2026)
+
 
 library(deSolve)
 
@@ -151,4 +159,83 @@ plot(prop_failure_overallview$prop_failure_overall,prop_failure_overallview$lowe
 library(dplyr)
 acceptable_range <- prop_failure_overallview %>%
   filter(prop_failure_overall <= 0.05)
+
+library(ggplot2)
+hplot2 <- ggplot(data=prop_failure_overallview, aes(x=prop_failure_overall,y=lower)) +
+  geom_line(linewidth = 0.65, linetype = 1) +
+  geom_hline(yintercept = 100, color="darkgreen" ) +
+  geom_hline(yintercept = 86, color="darkgreen" ) +
+  # annotate(geom="text", x=<<adjust to fit>>,y=100,label="upper boundary 0.05 (100)") +
+  # annotate(geom="text", x=<<adjust to fit>>,y=86,label="lower boundary 0.05 (86)") +
+  labs(x="Proportion failure", y="Completed per month")
+hplot2
+
+#----
+# Importance Sampling to look at probability of values in the tail(s)
+#----
+
+balance_means <- colMeans(overall)
+hist(balance_means, breaks = "FD", probability = TRUE)
+
+overall_balance_mu <- mean(balance_means)
+overall_balance_mu
+
+balance_sds <- apply(overall,2, FUN = sd)
+hist(balance_sds)
+
+overall_balance_sd <- mean(balance_sds)
+overall_balance_sd
+
+target_mu <- overall_balance_mu
+target_sigma <- overall_balance_sd
+
+
+# Parameters
+n <- 1000             # Number of samples
+proposal_mu <- 230     # Proposal distribution: Normal(mean=230, sd=28)
+proposal_sd <- 28
+
+# 1. Sample from the proposal distribution
+x_proposal <- rnorm(n, mean = proposal_mu, sd = proposal_sd)
+# x_samples <- rt(n, df = 10, ncp = proposal_mu) # t dist
+
+# generate a dist based on the target mean with matching n of proposal dist
+x_target <- rnorm(n, mean = target_mu, sd = target_sigma)
+# use a bootstrap to be more realistic
+# x_target <- sample(P, size = n, replace=T)
+
+
+# 2. Define the function we want to estimate (the indicator for X > 200)
+h_x <- ifelse(x_proposal > proposal_mu, 1, 0)
+
+# 3. Calculate importance weights: w = target_pdf / proposal_pdf
+weights <- dnorm(x_proposal, mean = target_mu, sd = target_sigma) /
+  dnorm(x_proposal, mean = proposal_mu, sd = proposal_sd)
+
+# for tdist
+# weights <- dnorm(x_samples, mean = target_mu, sd = target_sigma) /
+#  dt(x_samples, df = 10, ncp = proposal_mu)
+
+
+# 4. Importance Sampling Estimate
+is_estimate <- mean(h_x * weights)
+
+# 5. Compare with the true value
+true_value <- pnorm(proposal_mu, mean=target_mu, sd=target_sigma, lower.tail = FALSE)
+
+cat("Importance Sampling Estimate:", format(is_estimate, scientific = FALSE), "\n")
+cat("True Analytical Value:       ", format(true_value, scientific = FALSE), "\n")
+
+
+hist(x_target, breaks = "FD", probability = TRUE,
+     main = "Target with proposal overlay",
+     xlab = expression(mu),
+     # xlab = expression("IS estimate/True Value " * mu * is_estimate * true_value),
+     xlim = c(0, 350),
+     col = "lightgray", border = "white")
+
+lines(density(x_proposal), col = "blue", lwd = 2)
+abline(v=target_mu, col="green")
+abline(v=proposal_mu, col="red")
+
 
