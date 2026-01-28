@@ -11,6 +11,10 @@ try(dev.off(dev.list()["RStudioGD"]), silent=TRUE)
 gc() # garbage collection
 set.seed(2026)
 
+#----
+# Section 1
+# Single MC run and plot using deSolve
+#----
 
 library(deSolve)
 
@@ -48,7 +52,15 @@ plot(out, type="line", which="a")
 #      xlab = "Time (d)", main = c("Three Runs: 40, 60, 80 to 100"),
 #      col = c("red", "blue", "darkred"))
 
+#----
+# End Section 1
+#----
 
+
+#----
+# Section 2
+# Main function and MC method
+#----
 
 # below is the primary function to calculate proportion of time the project task goal is not met
 pcrsfunc <- function(m,l,u,t,r,d) {
@@ -171,7 +183,16 @@ hplot2 <- ggplot(data=prop_failure_overallview, aes(x=prop_failure_overall,y=low
 hplot2
 
 #----
-# Importance Sampling to look at probability of values in the tail(s)
+# End Section 2
+#----
+
+
+#----
+# Section 3
+# Importance Sampling to look closely at probability of values in the tail(s)
+# 
+# Note: in the example below, the t distribution as proposal g(x) ends up being slightly more accurate.
+# Selection of proposal distribution is an important topic in IS.
 #----
 
 balance_means <- colMeans(overall)
@@ -184,7 +205,7 @@ balance_sds <- apply(overall,2, FUN = sd)
 hist(balance_sds)
 
 overall_balance_sd <- mean(balance_sds)
-overall_balance_sd
+overall_balance_sd 
 
 target_mu <- overall_balance_mu
 target_sigma <- overall_balance_sd
@@ -192,30 +213,28 @@ target_sigma <- overall_balance_sd
 
 # Parameters
 n <- 1000             # Number of samples
-proposal_mu <- 230     # Proposal distribution: Normal(mean=230, sd=28)
-proposal_sd <- 28
+proposal_mu <- 130     # tail value to test for
+proposal_sd <- overall_balance_sd
 
-# 1. Sample from the proposal distribution
-x_proposal <- rnorm(n, mean = proposal_mu, sd = proposal_sd)
-# x_samples <- rt(n, df = 10, ncp = proposal_mu) # t dist
+# 1. generate the proposal distribution based on tail value e.g., Normal(mean=130, sd=28) 
+g_proposal <- rnorm(n, mean = proposal_mu, sd = proposal_sd)
+# g_proposal <- rt(n, df = 10, ncp = proposal_mu) # t dist
 
-# generate a dist based on the target mean with matching n of proposal dist
-x_target <- rnorm(n, mean = target_mu, sd = target_sigma)
-# use a bootstrap to be more realistic
-# x_target <- sample(P, size = n, replace=T)
+# generate a dist based on the target mean/sd with matching n of proposal dist
+f_target <- rnorm(n, mean = target_mu, sd = target_sigma)
 
-
-# 2. Define the function we want to estimate (the indicator for X > 200)
-h_x <- ifelse(x_proposal > proposal_mu, 1, 0)
+# 2. Define the h function we want to estimate (the indicator for X > tail value)
+# if a value in our proposal dist isn't greater than the x we are testing for
+# (e.g, 130) it's weighting will be zero
+h_x <- ifelse(g_proposal > proposal_mu, 1, 0)
 
 # 3. Calculate importance weights: w = target_pdf / proposal_pdf
-weights <- dnorm(x_proposal, mean = target_mu, sd = target_sigma) /
-  dnorm(x_proposal, mean = proposal_mu, sd = proposal_sd)
+weights <- dnorm(g_proposal, mean = target_mu, sd = target_sigma) /
+  dnorm(g_proposal, mean = proposal_mu, sd = proposal_sd)
 
 # for tdist
-# weights <- dnorm(x_samples, mean = target_mu, sd = target_sigma) /
-#  dt(x_samples, df = 10, ncp = proposal_mu)
-
+# weights <- dnorm(g_proposal, mean = target_mu, sd = target_sigma) /
+#  dt(g_proposal, df = 10, ncp = proposal_mu)
 
 # 4. Importance Sampling Estimate
 is_estimate <- mean(h_x * weights)
@@ -226,16 +245,21 @@ true_value <- pnorm(proposal_mu, mean=target_mu, sd=target_sigma, lower.tail = F
 cat("Importance Sampling Estimate:", format(is_estimate, scientific = FALSE), "\n")
 cat("True Analytical Value:       ", format(true_value, scientific = FALSE), "\n")
 
+# Normal dist results for this example:
+# Importance Sampling Estimate: 0.04234241 
+# True Analytical Value:        0.04053394 
 
-hist(x_target, breaks = "FD", probability = TRUE,
+# t dist results for this example:
+# Importance Sampling Estimate: 0.04027627 
+# True Analytical Value:        0.04053394 
+
+hist(f_target, breaks = "FD", probability = TRUE,
      main = "Target with proposal overlay",
      xlab = expression(mu),
      # xlab = expression("IS estimate/True Value " * mu * is_estimate * true_value),
-     xlim = c(0, 350),
+     xlim = c(0, 250),
      col = "lightgray", border = "white")
 
-lines(density(x_proposal), col = "blue", lwd = 2)
+lines(density(g_proposal), col = "blue", lwd = 2)
 abline(v=target_mu, col="green")
 abline(v=proposal_mu, col="red")
-
-
