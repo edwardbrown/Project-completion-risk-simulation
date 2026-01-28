@@ -126,6 +126,36 @@ hist(bresults[,2])
 quantile(bresults[,2], 0.025)
 quantile(bresults[,2], 0.975)
 
+
+#function which will bootstrap the standard error of the mean and median
+btstrap <- function(data, num) {
+  resamples <- lapply(1:num, function(i) sample(data, size = length(data), replace=T))
+  r.median <- sapply(resamples, median)
+  r.mean <- sapply(resamples, mean)
+  std.err <- sqrt(var(r.mean))
+  std.err.med <- sqrt(var(r.median))
+  list(std.err.med=std.err.med,std.err=std.err,resamples=resamples,medians=r.median,means=r.mean)
+  
+}
+
+# saving the results of the function b.median in the object b1
+b1 <- btstrap(bresults[,2], reps)
+
+# displaying the first of the  bootstrap samples
+b1$resamples[i]
+
+# displaying the standard error
+b1$std.err
+b1$std.err.med
+
+# displaying the histogram of the distribution of medians
+hist(b1$medians)
+summary(b1$medians)
+
+# displaying the histogram of the distribution of means
+hist(b1$means)
+summary(b1$means)
+
 # store in a data frame
 dataview <- as.data.frame(bresults)
 
@@ -156,7 +186,6 @@ hist(prop_failure_overall)
 
 # data frame if desired. Set the number below to match the upper boundary used above (e.g., 100)
 # You should end up with a data frame showing the proportion of failure for each lower/upper combo you simulated
-prop_failure_overallview <- as.data.frame(prop_failure_overall)
 prop_failure_overallview <- as.data.frame(prop_failure_overall)
 prop_failure_overallview$lower <- (100-seq.int(nrow(prop_failure_overallview)))
 prop_failure_overallview$upper <- 100
