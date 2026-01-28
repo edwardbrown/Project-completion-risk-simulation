@@ -2,7 +2,7 @@
 # The first section uses deSolve as an exemplar and provides a chart, though it can be extended.
 # The second section provides the bootsrapping and stores the number of project tasks not completed
 # and calculates an estimate of the proportion of failures that occur. 
-# There is now an additional section to perform importance sampling to test for extreme values in the tail(s).
+# The third section to perform importance sampling to test for extreme values in the tail(s).
 # Edward G. Brown 2025
 
 rm(list=ls())
@@ -135,8 +135,6 @@ prop_failure <- length(dataview$V2[dataview$V2 > 0])/reps # use this if returnin
 prop_failure
 
 
-
-
 # this matrix will store our results when we iterate the function over a range for the lower (or upper) boundary value
 # it's important to set the last argument to be the correct column size
 overall <- matrix(0,reps,60)
@@ -229,6 +227,7 @@ f_target <- rnorm(n, mean = target_mu, sd = target_sigma)
 h_x <- ifelse(g_proposal > proposal_mu, 1, 0)
 
 # 3. Calculate importance weights: w = target_pdf / proposal_pdf
+# but note that the target pdf is using the proposal dist, not the target dist!
 weights <- dnorm(g_proposal, mean = target_mu, sd = target_sigma) /
   dnorm(g_proposal, mean = proposal_mu, sd = proposal_sd)
 
