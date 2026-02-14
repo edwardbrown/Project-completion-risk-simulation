@@ -161,7 +161,7 @@ dataview <- as.data.frame(bresults)
 
 # the following calculates an estimate of the proportion of failure across all bootstrap replicates
 # prop_failure <- length(dataview$bresults[dataview$bresults > 0])/reps # use this if returning 1 variable
-prop_failure <- length(dataview$V2[dataview$V2 > 0])/reps # use this if returning the matrix
+prop_failure <- length(dataview$V4[dataview$V4 > 0])/reps # use this if returning the matrix
 prop_failure
 
 
@@ -291,3 +291,4 @@ hist(f_target, breaks = "FD", probability = TRUE,
 lines(density(g_proposal), col = "blue", lwd = 2)
 abline(v=target_mu, col="green")
 abline(v=proposal_mu, col="red")
+
